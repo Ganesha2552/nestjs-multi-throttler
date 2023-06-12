@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - 'master'
+  push:
+    branches:
+      - '*'
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  test:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [14.x]
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: install
+      run: yarn
+    - name: lint
+      run: yarn lint
+    - name: build
+      run: yarn build
+    - name: test
+      run: yarn test:cov
+    - name: E2E test
+      run: yarn test:e2e
+
+  auto-merge:
+    needs: test
+    if: contains(github.event.pull_request.user.login, 'dependabot') || contains(github.event.pull_request.user.login, 'renovate')
+    runs-on: ubuntu-latest
+    steps:
+    - name: automerge
+      uses: pascalgn/automerge-action@v0.15.6
+      env:
+        GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        MERGE_LABELS: ""
+        MERGE_METHOD: rebase 
