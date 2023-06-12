@@ -1,6 +1,6 @@
 {
   "name": "nestjs-multi-throttler",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A NestJS package that provides a multi-rate limit handler for efficient and scalable server-side applications. It allows you to easily configure and manage multiple rate limits, such as requests per minute or requests per hour, with support for different storage options like Redis, in-memory storage, and MongoDB. Ensure optimal performance and prevent abuse by controlling the rate of incoming requests in your NestJS applications.",
   "author": "Ganesha moorthy <ganesh.moorthy2552@gmail.com>",
   "contributors": [],
@@ -28,9 +28,11 @@
   "private": false,
   "license": "MIT",
   "main": "dist/index.js",
+
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "prebuild": "rimraf dist",
