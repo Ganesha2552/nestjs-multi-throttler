@@ -118,7 +118,8 @@ import { ThrottlerGuard, ThrottlerModule } from 'nestjs-multi-throttler';
 export class AppModule {}
 ```
 
-The above would mean that 10 requests from the same IP can be made to a single endpoint in 1 minute.
+The above would mean that 5 requests from the same IP can be made to a single endpoint in 1 minute,
+along with 50 requests for 1 hour and a custom timelimit of 20 seconds with 3 requests.
 
 ```ts
 @Module({
