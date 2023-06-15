@@ -1,82 +1,21 @@
 import { Injectable, OnApplicationShutdown } from '@nestjs/common';
-import { Redis } from 'ioredis';
-import { FindOneAndUpdateOptions, MongoClient } from 'mongodb';
+import { Cluster, Redis, RedisOptions } from 'ioredis';
+import { FindOneAndUpdateOptions, MongoClient, MongoClientOptions } from 'mongodb';
 import { ThrottlerStorageRecord } from './throttler-storage-record.interface';
-import { ThrottlerModuleOptions } from './throttler-module-options.interface';
 import { ThrottlerStorage } from './throttler-storage.interface';
 
 @Injectable()
-export class ThrottlerStorageService implements ThrottlerStorage, OnApplicationShutdown {
-  private redisClient: Redis;
-  private mongoClient: MongoClient;
+export class ThrottlerStorageMemoryService implements ThrottlerStorage {
   private _storage: Record<string, ThrottlerStorageRecord>;
+
   get storage(): Record<string, ThrottlerStorageRecord> {
     return this._storage;
   }
-  constructor(private throttleOptions: ThrottlerModuleOptions) {
-    // Initialize Redis or MongoDB clients if the respective storage type is selected
-    if (throttleOptions.storage.type === 'redis') {
-      this.redisClient = new Redis(throttleOptions.storage.redisOptions.url);
-    } else if (throttleOptions.storage.type === 'mongodb') {
-      this.mongoClient = new MongoClient(throttleOptions.storage.mongoOptions.url);
-      this.mongoClient.connect().then(() => {
-        this.createTTLIndex();
-      });
-    } else {
-      // Initialize in-memory storage
-      this._storage = {};
-    }
-  }
 
-  /**
-   * Creates a TTL index on the `expireAt` field in the MongoDB collection.
-   */
-  private async createTTLIndex(): Promise<void> {
-    await this.mongoClient
-      .db()
-      .collection('throttler')
-      .createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 });
+  constructor() {
+    this._storage = {}; // Initialize the in-memory storage
   }
-
-  /**
-   * Increments the request count for the specified key
-   * and updates the TTL (time to live) for the key's expiration.
-   * @param key The key for which to increment the request count.
-   * @param ttlMilliseconds The TTL value in milliseconds for the key's expiration.
-   * @returns The updated request count and time to expiration.
-   */
   async increment(key: string, ttlMilliseconds: number): Promise<ThrottlerStorageRecord> {
-    // Update the Redis or MongoDB record if the respective storage type is selected
-    if (this.throttleOptions.storage.type === 'redis') {
-      const totalHits = await this.redisClient.incr(key);
-      await this.redisClient.expire(key, ttlMilliseconds / 1000);
-      return {
-        totalHits,
-        timeToExpire: ttlMilliseconds / 1000,
-      };
-    } else if (this.throttleOptions.storage.type === 'mongodb') {
-      const result = await this.mongoClient
-        .db()
-        .collection('throttler')
-        .findOneAndUpdate(
-          { key },
-          {
-            $inc: { totalHits: 1 },
-            $setOnInsert: { expireAt: new Date(Date.now() + ttlMilliseconds) },
-          },
-          {
-            upsert: true,
-            returnDocument: 'after',
-          } as FindOneAndUpdateOptions,
-        );
-      const { totalHits, expireAt } = result.value;
-      return {
-        totalHits,
-        timeToExpire: Math.floor(expireAt.getTime() - Date.now() / 1000),
-      };
-    }
-
-    // If the storage type is not Redis or MongoDB, fallback to in-memory storage
     if (!this._storage[key]) {
       this._storage[key] = { totalHits: 0, timeToExpire: Date.now() + ttlMilliseconds };
     }
@@ -105,16 +44,114 @@ export class ThrottlerStorageService implements ThrottlerStorage, OnApplicationS
   private getExpirationTime(key: string): number {
     return Math.floor((this.storage[key].timeToExpire - Date.now()) / 1000);
   }
+}
+@Injectable()
+export class ThrottlerStorageRedisService implements ThrottlerStorage, OnApplicationShutdown {
+  private redisClient: Redis | Cluster;
+  private _storage: Record<string, ThrottlerStorageRecord>;
+
+  get storage(): Record<string, ThrottlerStorageRecord> {
+    return this._storage;
+  }
+
+  constructor(redisOrOptions?: Redis | Cluster | RedisOptions | string) {
+    if (redisOrOptions instanceof Redis || redisOrOptions instanceof Cluster) {
+      this.redisClient = redisOrOptions;
+    } else if (typeof redisOrOptions === 'string') {
+      this.redisClient = new Redis(redisOrOptions as string);
+    } else {
+      this.redisClient = new Redis(redisOrOptions as RedisOptions);
+    }
+
+    this._storage = {}; // Initialize the storage (e.g., empty object)
+  }
+  async increment(key: string, ttlMilliseconds: number): Promise<ThrottlerStorageRecord> {
+    // Update the Redis record if the respective storage type is selected
+    const totalHits = await this.redisClient.incr(key);
+    await this.redisClient.expire(key, ttlMilliseconds / 1000);
+    return {
+      totalHits,
+      timeToExpire: ttlMilliseconds / 1000,
+    };
+  }
+
+  async onApplicationShutdown() {
+    if (this.redisClient) {
+      await this.redisClient.quit();
+    }
+  }
+}
+@Injectable()
+export class ThrottlerStorageMongoService implements ThrottlerStorage, OnApplicationShutdown {
+  private mongoClient: MongoClient;
+  private _storage: Record<string, ThrottlerStorageRecord>;
+  get storage(): Record<string, ThrottlerStorageRecord> {
+    return this._storage;
+  }
+
+  constructor(url: string, mongoOptions?: MongoClientOptions) {
+    this._storage = {}; // Initialize the storage (e.g., empty object)
+    this.mongoClient = new MongoClient(url, mongoOptions);
+
+    (async () => {
+      try {
+        await this.mongoClient.connect();
+        await this.createTTLIndex();
+      } catch (error) {
+        console.error('Error connecting to MongoDB:', error);
+      }
+    })();
+  }
+
+  /**
+   * Creates a TTL index on the `expireAt` field in the MongoDB collection.
+   */
+  private async createTTLIndex(): Promise<void> {
+    await this.mongoClient
+      .db()
+      .collection('throttler')
+      .createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 });
+  }
+
+  /**
+   * Increments the request count for the specified key
+   * and updates the TTL (time to live) for the key's expiration.
+   * @param key The key for which to increment the request count.
+   * @param ttlMilliseconds The TTL value in milliseconds for the key's expiration.
+   * @returns The updated request count and time to expiration.
+   */
+  async increment(key: string, ttlMilliseconds: number): Promise<ThrottlerStorageRecord> {
+    // Update the Redis or MongoDB record if the respective storage type is selected
+
+    const result = await this.mongoClient
+      .db()
+      .collection('throttler')
+      .findOneAndUpdate(
+        { key },
+        {
+          $inc: { totalHits: 1 },
+          $set: { expireAt: new Date(Date.now() + ttlMilliseconds) },
+        },
+        {
+          upsert: true,
+          returnDocument: 'after',
+        } as FindOneAndUpdateOptions,
+      );
+    const { totalHits, expireAt } = result.value;
+     const timeToExpire = Math.max(0, Math.floor((expireAt.getTime() - Date.now()) / 1000));
+
+    return {
+      totalHits,
+      timeToExpire,
+    };
+  }
 
   /**
    * Cleans up the resources when the application shuts down.
    */
-  onApplicationShutdown() {
-    if (this.redisClient) {
-      this.redisClient.quit();
-    }
+  async onApplicationShutdown() {
     if (this.mongoClient) {
-      this.mongoClient.close();
+      await this.mongoClient.close();
     }
   }
 }

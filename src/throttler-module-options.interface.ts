@@ -1,4 +1,5 @@
 import { ExecutionContext, ModuleMetadata, Type } from '@nestjs/common';
+import { ThrottlerStorage } from './throttler-storage.interface';
 
 /**
  * @publicApi
@@ -21,7 +22,7 @@ export interface ThrottlerModuleOptions {
    * This can be an instance of a custom storage class or
    * one of the built-in storage classes (MongoDB, Redis).
    */
-  storage?: ThrottlerStorageOptions;
+  storage?: ThrottlerStorage;
 
   /**
    * A factory method to determine if throttling should be skipped.
@@ -30,48 +31,6 @@ export interface ThrottlerModuleOptions {
   skipIf?: (context: ExecutionContext) => boolean;
 }
 
-/**
- * @publicApi
- */
-export interface ThrottlerStorageOptions {
-  /**
-   * The type of storage to use for rate limiting.
-   * Possible values are 'memory' (default), 'redis', and 'mongodb'.
-   */
-  type?: 'memory' | 'redis' | 'mongodb';
-
-  /**
-   * The Redis connection options.
-   * Required if the storage type is 'redis'.
-   */
-  redisOptions?: RedisOptions;
-
-  /**
-   * The MongoDB connection options.
-   * Required if the storage type is 'mongodb'.
-   */
-  mongoOptions?: MongoOptions;
-}
-
-/**
- * Redis connection options.
- */
-export interface RedisOptions {
-  /**
-   * The Redis connection URL.
-   */
-  url: string;
-}
-
-/**
- * MongoDB connection options.
- */
-export interface MongoOptions {
-  /**
-   * The MongoDB connection URL.
-   */
-  url: string;
-}
 
 /**
  * @publicApi

@@ -6,6 +6,7 @@ import { ThrottlerStorage } from './throttler-storage.interface';
 import { THROTTLER_OPTIONS } from './throttler.constants';
 import { ThrottlerException } from './throttler.exception';
 import { ThrottlerGuard } from './throttler.guard';
+import { ThrottlerStorageRedisService } from './throttler.service';
 
 class ThrottlerStorageServiceMock implements ThrottlerStorage {
   private _storage: Record<string, ThrottlerStorageRecord> = {};
@@ -95,12 +96,7 @@ describe('ThrottlerGuard', () => {
               { timeUnit: 'minute', limit: 10 },
             ],
             ignoreUserAgents: [/userAgentIgnore/],
-            storage: {
-              type: 'redis',
-              redisOptions: {
-                url: 'redis://localhost:6379',
-              },
-            },
+            storage: new ThrottlerStorageRedisService(),
             skipIf: () => false,
           },
         },
@@ -120,6 +116,7 @@ describe('ThrottlerGuard', () => {
     reflector = modRef.get(Reflector);
     service = modRef.get<ThrottlerStorageServiceMock>(ThrottlerStorage);
   });
+  
 
   it('should have all of the providers defined', () => {
     expect(guard).toBeDefined();

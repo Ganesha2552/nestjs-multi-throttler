@@ -6,6 +6,7 @@ import {
 } from './throttler-module-options.interface';
 import { THROTTLER_OPTIONS } from './throttler.constants';
 import { createThrottlerProviders, ThrottlerStorageProvider } from './throttler.providers';
+import { ThrottlerStorageMemoryService } from './throttler.service';
 
 /**
  * @publicApi
@@ -18,7 +19,7 @@ export class ThrottlerModule {
    */
   static forRoot(options: ThrottlerModuleOptions = {}): DynamicModule {
     if (!options.storage) {
-      options.storage = { type: 'memory' }; // Set default storage as memory
+      options.storage = new ThrottlerStorageMemoryService(); // Set default storage as memory
     }
     const providers = [...createThrottlerProviders(options), ThrottlerStorageProvider];
     return {

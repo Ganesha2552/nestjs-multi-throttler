@@ -1,27 +1,17 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+
+
+
+  <p align="center"> <a href="http://nestjs.org" target="blank">NestJS
+</a>  Multi-Throttler is a powerful rate limiting package for NestJS applications
 </p>
-
-[travis-image]: https://api.travis-ci.org/nestjs/nest.svg?branch=master
-[travis-url]: https://travis-ci.org/nestjs/nest
-[linux-image]: https://img.shields.io/travis/nestjs/nest/master.svg?label=linux
-[linux-url]: https://travis-ci.org/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
     <p align="center">
-<a href="https://www.npmjs.com/~nestjscore"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore"><img src="https://img.shields.io/npm/dm/@nestjs/core.svg" alt="NPM Downloads" /></a>
-<a href="https://travis-ci.org/nestjs/nest"><img src="https://api.travis-ci.org/nestjs/nest.svg?branch=master" alt="Travis" /></a>
-<a href="https://travis-ci.org/nestjs/nest"><img src="https://img.shields.io/travis/nestjs/nest/master.svg?label=linux" alt="Linux" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#5" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://twitter.com/nestframework"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+    
+![npm version](https://img.shields.io/npm/v/nestjs-multi-throttler?style=plastic)
+![npm download](https://img.shields.io/npm/dm/nestjs-multi-throttler?style=plastic)
+
+<a href="https://www.npmjs.com/nestjs-multi-throttler"><img src="https://img.shields.io/npm/l/nestjs-multi-throttler.svg" alt="Package License" /></a>
+<a href="https://coveralls.io/github/Ganesha2552/nestjs-multi-throttler?branch=main"><img src="https://coveralls.io/repos/github/Ganesha2552/nestjs-multi-throttler/badge.svg?branch=main#5" alt="Coverage" /></a>
+
 
 ## Description
 
@@ -77,8 +67,41 @@ import { ThrottlerModule } from 'nestjs-multi-throttler';
       limits: [
         { timeUnit: 'second', limit: 10 }, // Example rate limit configuration
         { timeUnit: 'minute', limit: 100 },
+        { timeUnit: 'hour', limit: 200 },
+        { timeUnit: 'day', limit: 300 },
+        { timeUnit: 'week', limit: 1000 },
+        { timeUnit: 1200, limit: 150 }, // custom configuration 1200 seconds ie. 20 mins 
       ],
-      storage: { type: 'redis', redisOptions: { url: 'redis://localhost:6379' } },
+      
+      // Below are possible options on how to configure the storage service.
+
+      // default config (host = localhost, port = 6379)
+      storage: new ThrottlerStorageRedisService(),
+
+      // connection url
+      storage: new ThrottlerStorageRedisService('redis://'),
+
+      // redis object
+      storage: new ThrottlerStorageRedisService(new Redis()),
+
+      // redis clusters
+      storage: new ThrottlerStorageRedisService(new Redis.Cluster(nodes, options)),
+
+
+      // connection url
+      storage: new ThrottlerStorageMongoService('mongodb://'),
+
+      // MongoDB connection string with connection options
+      storage: new ThrottlerStorageMongoService('mongodb://',{
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        // Other connection options
+        }
+      ),
+
+      //In-memory storage option
+      storage: new ThrottlerStorageMemoryService(),
+
     }),
   ],
 })
@@ -344,12 +367,7 @@ Option 1: Redis
   imports: [
   ThrottlerModule.forRoot({
   limits: [{ timeUnit: 'minute', limit: 5 }],
-  storage: {
-      type: 'redis',
-      redisOptions: {
-        url: 'redis://localhost:6379'
-      }
-    },
+  storage: new ThrottlerStorageRedisService(),
   }),
   ],
 })
@@ -364,7 +382,7 @@ Option 2: Memory (default)
   imports: [
   ThrottlerModule.forRoot({
   limits: [{ timeUnit: 'minute', limit: 5 }],
-    storage: { type: 'memory' }
+  storage: new ThrottlerStorageMemoryService(),// -- default
     }),
   ],
 })
@@ -379,12 +397,7 @@ Option 3: MongoDB
   imports: [
     ThrottlerModule.forRoot({
       limits: [{ timeUnit: 'minute', limit: 5 }],
-      storage: {
-        type: 'mongodb',
-        mongoOptions: {
-          url: 'mongodb://localhost:27017',
-        },
-      },
+      storage: new ThrottlerStorageMongoService('mongodb://localhost:27017'),
     }),
   ],
 })
