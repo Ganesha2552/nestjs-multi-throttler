@@ -137,10 +137,10 @@
     "@apollo/utils.keyvaluecache" "^2.1.0"
     "@apollo/utils.logger" "^2.0.0"
 
-"@apollo/server@4.7.3":
-  version "4.7.3"
-  resolved "https://registry.npmjs.org/@apollo/server/-/server-4.7.3.tgz"
-  integrity sha512-eFCzHHheNHfVALjYJjIghV7kSgO49ZFr8+4g2CKOLShoDmLplQ3blyL5NsONyC0Z5l8kqm62V8yXGoxy2eNGfw==
+"@apollo/server@4.7.4":
+  version "4.7.4"
+  resolved "https://registry.yarnpkg.com/@apollo/server/-/server-4.7.4.tgz#b2a999b5a1f6bb909ec1749106b0c6704296a622"
+  integrity sha512-7MwEsBR+4JRfjAzrFIOP0m/NdzNCyVOlRWCO/86zs73CC+trr08FklTD7JD0yx5BJDfyzjdhF2BZ1sEYvp/Waw==
   dependencies:
     "@apollo/cache-control-types" "^1.0.2"
     "@apollo/server-gateway-interface" "^1.1.0"
@@ -1125,7 +1125,7 @@
     tslib "^2.4.0"
     value-or-promise "1.0.11"
 
-"@graphql-tools/schema@9.0.17", "@graphql-tools/schema@^9.0.0":
+"@graphql-tools/schema@9.0.17":
   version "9.0.17"
   resolved "https://registry.npmjs.org/@graphql-tools/schema/-/schema-9.0.17.tgz"
   integrity sha512-HVLq0ecbkuXhJlpZ50IHP5nlISqH2GbNgjBJhhRzHeXhfwlUOT4ISXGquWTmuq61K0xSaO0aCjMpxe4QYbKTng==
@@ -1135,7 +1135,7 @@
     tslib "^2.4.0"
     value-or-promise "1.0.12"
 
-"@graphql-tools/schema@^9.0.18":
+"@graphql-tools/schema@^9.0.0", "@graphql-tools/schema@^9.0.18":
   version "9.0.18"
   resolved "https://registry.npmjs.org/@graphql-tools/schema/-/schema-9.0.18.tgz"
   integrity sha512-Kckb+qoo36o5RSIVfBNU5XR5fOg4adNa1xuhhUgbQejDaI684tIJbTWwYbrDPVEGL/dqJJX3rrsq7RLufjNFoQ==
